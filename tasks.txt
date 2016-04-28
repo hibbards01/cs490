@@ -1,0 +1,9 @@
+---------------------------------------------------
+                      TASKS
+---------------------------------------------------
+
+1. Get Approval with Brother Burton - Samuel Hibbard talk to him
+2. Get the Data - all figure out how to work with API
+3. Store into the database
+4. Decide on Machine Learning Algorithm
+5. Figure out the Trajectory
