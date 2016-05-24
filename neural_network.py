@@ -142,11 +142,6 @@ def main(args):
     # finally:
     #     cnx.close()
 
-    # print(ann.run([1, 0]))
-    # print(ann.run([0, 1]))
-    # print(ann.run([1, 1]))
-    # print(ann.run([0, 0]))
-
 
 if __name__ == '__main__':
     main(sys.argv)
