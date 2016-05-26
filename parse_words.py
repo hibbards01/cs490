@@ -2,6 +2,7 @@ from credentials import * # This is the file that has the credentials to
                           # connect to the database.
 import mysql.connector
 import re
+import string
 
 #####################################################################
 # get_messages
@@ -9,11 +10,24 @@ import re
 #####################################################################
 def get_messages(cursor):
     cursor.execute('''
-            DESC message_keyword;
+            SELECT id, content FROM message LIMIT 0, 1000;
         ''')
     messages = cursor.fetchall()
 
-    print(messages)
+    for message in messages:
+        line = message[1].decode('utf-8')
+        words = line.split()
+
+        # Insert into the tables
+        for word in words:
+            cursor.execute('''
+                    INSERT INTO keyword SET text = %s
+                ''', (word,))
+            rowId = cursor.lastrowid
+
+            cursor.execute('''
+                    INSERT INTO message_keyword SET message_id = %s, keyword_id = %s 
+                ''', (message[0], rowId))
 
     return
 
