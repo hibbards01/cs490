@@ -15,7 +15,7 @@ def remove_garbage(msg):
 	msg = re.sub(r"((?:http:\/\/|ftp:\/\/|https:\/\/|\w+@)\S*)[ ]?|([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?[ ]?", "", msg)
 	return msg
 
-def parse_messages():
+def parse_messages(initial, final):
 
 	# parse messages that were not flag as processed yet
 	global user
@@ -25,13 +25,17 @@ def parse_messages():
 
 	cnx = mysql.connector.connect(user=user, password=password, host=host, database=database)
 
-	query = ("SELECT id, CAST(content AS CHAR(500) CHARACTER SET utf8) as msg from message where processed = 0")
+	query = ("SELECT id, content as msg from message where processed = 0 and id between %s and %s" % (initial, final))
 	global cursor
 	cursor = cnx.cursor()
 	cursor.execute(query)
 
-	for (id, msg) in cursor:
-		analyze_message(remove_garbage(msg), id)
+	data = cursor.fetchall()
+	cnx.close()
+
+	for row in data:
+		analyze_message(remove_garbage(row[1]), row[0])
+		print "'Working message: %s" % (row[0])
 
 
 def analyze_message(content, msg_id):
@@ -42,8 +46,18 @@ def analyze_message(content, msg_id):
 	global password
 	global host
 	global database
+	global cursor
 
 	cnx = mysql.connector.connect(user=user, password=password, host=host, database=database)
+	cursor = cnx.cursor();
+	
+	# flag message as processed
+        flag_message = "UPDATE message set processed = 1 where id = %s" % (msg_id)
+        try:
+                cursor.execute(flag_message)
+        except mysql.connector.Error as err:
+  		print("Something went wrong: {}".format(err))
+                print flag_message
 
 	for (keyword) in keywords:
 
@@ -51,7 +65,7 @@ def analyze_message(content, msg_id):
 
 		# check if the keyword is already inside the database
 		query = ("SELECT id from keyword where text = '%s'" % (keyword))
-		global cursor
+		
 		cursor = cnx.cursor()
 		cursor.execute(query)
 
@@ -79,13 +93,6 @@ def analyze_message(content, msg_id):
 			cursor.execute(add_message_keyword)
 		except:
 			print "Error: %s" % (add_message_keyword)
-
-	# flag message as processed
-	flag_message = "UPDATE message set processed = 1 where id = %s" % (msg_id)
-	try:
-		cursor.execute(flag_message)
-	except:
-		print "Error: %s" % (flag_message)
 
 
 	cnx.commit()
