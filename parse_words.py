@@ -10,24 +10,31 @@ import string
 #####################################################################
 def get_messages(cursor):
     cursor.execute('''
-            SELECT id, content FROM message LIMIT 0, 1000;
+            select CAST(k.text AS CHAR(300) CHARACTER SET utf8), count(0) AS num
+from keyword k, message_keyword mk, message m
+where k.id = mk.keyword_id
+  and m.id = mk.message_id
+group by CAST(k.text AS CHAR(300) CHARACTER SET utf8)
+HAVING count(0) > 100
+order by count(0) desc;
         ''')
     messages = cursor.fetchall()
 
-    for message in messages:
-        line = message[1].decode('utf-8')
-        words = line.split()
+    print(messages)
+    # for message in messages:
+    #     line = message[1].decode('utf-8')
+    #     words = line.split()
 
-        # Insert into the tables
-        for word in words:
-            cursor.execute('''
-                    INSERT INTO keyword SET text = %s
-                ''', (word,))
-            rowId = cursor.lastrowid
+    #     # Insert into the tables
+    #     for word in words:
+    #         cursor.execute('''
+    #                 INSERT INTO keyword SET text = %s
+    #             ''', (word,))
+    #         rowId = cursor.lastrowid
 
-            cursor.execute('''
-                    INSERT INTO message_keyword SET message_id = %s, keyword_id = %s 
-                ''', (message[0], rowId))
+    #         cursor.execute('''
+    #                 INSERT INTO message_keyword SET message_id = %s, keyword_id = %s
+    #             ''', (message[0], rowId))
 
     return
 
