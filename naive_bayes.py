@@ -13,9 +13,12 @@ from credentials import * # This is the file that has the credentials to
                           # connect to the database.
 import mysql.connector
 from operator import itemgetter
-total = 20000
+total = 1000
 suicideProb = 13 / 100000
 regularProb = 1 - suicideProb
+
+suicidalTotal = 0
+regularTotal = 0
 
 #####################################################################
 # getSuicide
@@ -30,16 +33,11 @@ def getSuicide(cursor):
     keywords = { key.decode("utf-8"):value for key,value in array.items() }
 
     cursor.execute('''
-            SELECT COUNT(*) FROM keywords_suicidal
-        ''')
-
-    keywords['totalKeywords'] = int(cursor.fetchall()[0][0])
-
-    cursor.execute('''
             SELECT SUM(total) FROM keywords_suicidal
         ''')
 
-    keywords['totalUseOfKeywords'] = int(cursor.fetchall()[0][0])
+    global suicidalTotal
+    suicidalTotal = int(cursor.fetchall()[0][0])
 
     return keywords
 
@@ -56,16 +54,11 @@ def getRegular(cursor):
     keywords = { key.decode("utf-8"):value for key,value in array.items() }
 
     cursor.execute('''
-            SELECT COUNT(*) FROM keywords_regular
-        ''')
-
-    keywords['totalKeywords'] = int(cursor.fetchall()[0][0])
-
-    cursor.execute('''
             SELECT SUM(total) FROM keywords_regular
         ''')
 
-    keywords['totalUseOfKeywords'] = int(cursor.fetchall()[0][0])
+    global regularTotal
+    regularTotal = int(cursor.fetchall()[0][0])
 
     return keywords
 
@@ -84,11 +77,10 @@ def getMax(d):
 #####################################################################
 def createTable(suicidal, regular):
     keywords = {}
-    suicidalTotalUse = suicidal.pop('totalUseOfKeywords', None)
-    suicidalTotal = suicidal.pop('totalKeywords', None)
-    regularTotalUse = regular.pop('totalUseOfKeywords', None)
-    regularTotal = regular.pop('totalKeywords', None)
-    total = suicidalTotalUse + regularTotalUse
+
+    global suicidalTotal, regularTotal
+
+    total = suicidalTotal + regularTotal
 
     for key, value in suicidal.items():
         keywords[key] = value
@@ -105,18 +97,30 @@ def createTable(suicidal, regular):
         except:
             suicidal[key] = 0
 
-        probKeywordGivenSuicide = suicidal[key] / suicidalTotalUse
-        probKeyword = value / total
+        # print ("Word: ", key)
+        # print ("Total Word: ", suicidal[key])
+        # print ("Suicide total: ", suicidalTotal)
+        probKeywordGivenSuicide = suicidal[key] / suicidalTotal # P(W|S)
+        # print ("P(W|S): ", probKeywordGivenSuicide)
+        probKeyword = value / total # P(W)
+        # print ("P(W): ", probKeyword)
 
-        suicidal[key] = probKeywordGivenSuicide * suicideProb / probKeyword
+        suicidal[key] = probKeywordGivenSuicide * suicideProb / probKeyword # P(S|W)
+        # print ("P(S|W): ", suicidal[key])
 
         try:
             regular[key]
         except:
             regular[key] = 0
 
-        probKeywordGivenRegular = regular[key] / regularTotalUse
+        # print ("Total Word: ", regular[key])
+        # print ("Regular total: ", regularTotal)
+        # print ("Percent: ", regularProb)
+        probKeywordGivenRegular = regular[key] / regularTotal
+        # print ("P(W|R): ", probKeywordGivenRegular)
+        # print ("P(W): ", probKeyword)
         regular[key] = probKeywordGivenRegular * regularProb / probKeyword
+        # print ("P(R|W): ", regular[key])
 
     # key = getMax(suicidal)
 
