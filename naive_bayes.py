@@ -13,7 +13,7 @@ from credentials import * # This is the file that has the credentials to
                           # connect to the database.
 import mysql.connector
 from operator import itemgetter
-total = 1000
+total = 100
 suicideProb = 13 / 100000
 regularProb = 1 - suicideProb
 
@@ -91,46 +91,36 @@ def createTable(suicidal, regular):
         else:
             keywords[key] += value
 
+    deleteKeys = []
     for key,value in keywords.items():
-        try:
-            suicidal[key]
-        except:
-            suicidal[key] = 0
-
-        # print ("Word: ", key)
-        # print ("Total Word: ", suicidal[key])
-        # print ("Suicide total: ", suicidalTotal)
-        probKeywordGivenSuicide = suicidal[key] / suicidalTotal # P(W|S)
-        # print ("P(W|S): ", probKeywordGivenSuicide)
         probKeyword = value / total # P(W)
-        # print ("P(W): ", probKeyword)
+        try:
+            probKeywordGivenSuicide = suicidal[key] / suicidalTotal # P(W|S)
 
-        suicidal[key] = probKeywordGivenSuicide * suicideProb / probKeyword # P(S|W)
-        # print ("P(S|W): ", suicidal[key])
+            suicidal[key] = probKeywordGivenSuicide * suicideProb / probKeyword # P(S|W)
+        except:
+            deleteKeys.append(key)
+            if key in suicidal:
+                del suicidal[key]
+            if key in regular:
+                del regular[key]
 
         try:
-            regular[key]
+            probKeywordGivenRegular = regular[key] / regularTotal
+
+            # regular[key] = probKeywordGivenRegular * regularProb / probKeyword
         except:
-            regular[key] = 0
+            deleteKeys.append(key)
+            if key in suicidal:
+                del suicidal[key]
+            if key in regular:
+                del regular[key]
 
-        # print ("Total Word: ", regular[key])
-        # print ("Regular total: ", regularTotal)
-        # print ("Percent: ", regularProb)
-        probKeywordGivenRegular = regular[key] / regularTotal
-        # print ("P(W|R): ", probKeywordGivenRegular)
-        # print ("P(W): ", probKeyword)
-        regular[key] = probKeywordGivenRegular * regularProb / probKeyword
-        # print ("P(R|W): ", regular[key])
+    for key in deleteKeys:
+        keywords.pop(key, None)
 
-    # key = getMax(suicidal)
-
-    # print("key: ", key, " value: ", suicidal[key])
-
-    # key = getMax(regular)
-
-    # print("key: ", key, " value: ", regular[key])
-    print(sorted(suicidal.items(), key=itemgetter(1)))
-    print(sorted(regular.items(), key=itemgetter(1)))
+    print(sorted(suicidal.items(), key=itemgetter(1), reverse=True))
+    # print(sorted(regular.items(), key=itemgetter(1), reverse=True))
 
 
 #####################################################################
