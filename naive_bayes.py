@@ -14,7 +14,7 @@ from credentials import * # This is the file that has the credentials to
 import mysql.connector
 import math
 from operator import itemgetter
-total = 100
+total = 20000
 
 suicidalTotal = 0
 regularTotal = 0
@@ -38,6 +38,9 @@ def getSuicide(cursor):
     global suicidalTotal
     suicidalTotal = int(cursor.fetchall()[0][0])
 
+    # print(suicidalTotal)
+    # print(keywords)
+
     return keywords
 
 #####################################################################
@@ -46,11 +49,22 @@ def getSuicide(cursor):
 #####################################################################
 def getRegular(cursor):
     cursor.execute('''
+            SELECT * FROM keywords_regular WHERE total > %s ORDER BY total DESC
+        ''', (total,))
+
+    array = dict(cursor.fetchall())
+    keywords = { key.decode("utf-8"):value for key,value in array.items() }
+
+    cursor.execute('''
             SELECT SUM(total) FROM keywords_regular
         ''')
 
     global regularTotal
     regularTotal = int(cursor.fetchall()[0][0])
+
+    # print(regularTotal)
+
+    return keywords
 
 #####################################################################
 # getMax
@@ -65,44 +79,43 @@ def getMax(d):
 # createTable
 #   This will create the probability tables.
 #####################################################################
-def createTable(suicidal):
+def createTable(suicidal, regular):
     keywords = {}
 
     global suicidalTotal, regularTotal
 
     total = suicidalTotal + regularTotal
 
-    for key, value in suicidal.items():
-        keywords[key] = value
-
     print(total)
     deleteKeys = []
-    for key,value in keywords.items():
-        probKeyword = value / total # P(W)
-        try:
-            print("_______BEGIN_______")
-            print(suicidal[key], " ", probKeyword, " ", suicidalTotal)
-            probKeywordGivenSuicide = suicidal[key] / suicidalTotal # P(W|S)
-            print(math.log10(probKeywordGivenSuicide), " ", math.log10(probKeyword))
-            suicidal[key] = math.log10(probKeywordGivenSuicide) - math.log10(probKeyword) # P(S|W)
-            print(suicidal[key])
-            print("____________END___________")
-        except:
+    for key, value in suicidal.items():
+        if key in regular:
+            keywords[key] = value + regular[key]
+        else:
             deleteKeys.append(key)
-            if key in suicidal:
-                del suicidal[key]
 
     for key in deleteKeys:
-        keywords.pop(key, None)
+        suicidal.pop(key, None)
 
-    sorted(suicidal.items(), key=itemgetter(1), reverse=True)
+    print(keywords)
+    for key, value in keywords.items():
+        probKeyword = value / total # P(W)
+        probKeywordGivenSuicide = suicidal[key] / suicidalTotal # P(W|S)
+        suicidal[key] = probKeywordGivenSuicide / probKeyword # P(S|W)
 
-    normalize = list(suicidal.values())[0]
+    sort = sorted(suicidal.items(), key=itemgetter(1), reverse=True)
 
-    for key, value in suicidal.items():
-        suicidal[key] /= normalize
+    maxNum = list(suicidal.values())[0]
+    minNum = list(suicidal.values())[len(suicidal) - 1]
 
-    print(suicidal)
+    # print(maxNum, " ", minNum)
+
+    # for key, value in suicidal.items():
+    #     print("BEFORE")
+    #     print(suicidal[key])
+    #     suicidal[key] = (suicidal[key] - minNum) / (maxNum - minNum)
+    #     print(suicidal[key])
+    #     print("AFTER")
 
 #####################################################################
 # main
@@ -120,9 +133,9 @@ def main():
         cursor = cnx.cursor()
 
         suicidal = getSuicide(cursor)
-        getRegular(cursor)
+        regular = getRegular(cursor)
 
-        createTable(suicidal)
+        createTable(suicidal, regular)
     finally:
         cnx.close()
 
