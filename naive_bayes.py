@@ -14,7 +14,7 @@ from credentials import * # This is the file that has the credentials to
 import mysql.connector
 import math
 from operator import itemgetter
-total = 20000
+total = 100
 
 suicidalTotal = 0
 regularTotal = 0
@@ -86,7 +86,7 @@ def createTable(suicidal, regular):
 
     total = suicidalTotal + regularTotal
 
-    print(total)
+    # print(total)
     deleteKeys = []
     for key, value in suicidal.items():
         if key in regular:
@@ -97,7 +97,7 @@ def createTable(suicidal, regular):
     for key in deleteKeys:
         suicidal.pop(key, None)
 
-    print(keywords)
+    # print(keywords)
     for key, value in keywords.items():
         probKeyword = value / total # P(W)
         probKeywordGivenSuicide = suicidal[key] / suicidalTotal # P(W|S)
@@ -105,17 +105,43 @@ def createTable(suicidal, regular):
 
     sort = sorted(suicidal.items(), key=itemgetter(1), reverse=True)
 
-    maxNum = list(suicidal.values())[0]
-    minNum = list(suicidal.values())[len(suicidal) - 1]
+    maxNum = sort[0][1]
+    minNum = sort[len(sort) - 1][1]
 
     # print(maxNum, " ", minNum)
 
-    # for key, value in suicidal.items():
-    #     print("BEFORE")
-    #     print(suicidal[key])
-    #     suicidal[key] = (suicidal[key] - minNum) / (maxNum - minNum)
-    #     print(suicidal[key])
-    #     print("AFTER")
+    for key, value in suicidal.items():
+        # print("BEFORE")
+        # print(suicidal[key])
+        suicidal[key] = (suicidal[key] - minNum) / (maxNum - minNum)
+        # print(suicidal[key])
+        # print("AFTER")
+
+    # print(sort)
+    return suicidal
+
+def getTable():
+
+    arr = []
+
+    global user
+    global password
+    global host
+    global database
+
+    cnx = mysql.connector.connect(user=user, password=password, host=host, database=database)
+
+    try:
+        cursor = cnx.cursor()
+
+        suicidal = getSuicide(cursor)
+        regular = getRegular(cursor)
+
+        arr = createTable(suicidal, regular)
+    finally:
+        cnx.close()
+
+    return arr
 
 #####################################################################
 # main
