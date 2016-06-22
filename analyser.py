@@ -59,7 +59,11 @@ def main():
         for i in range(int(sys.argv[1]), int(sys.argv[2])):
             users[i] = analyseUser(i, cursor)
         sort = sorted(users.items(), key=itemgetter(1), reverse=True)
-        print(sort)
+        
+        for item in sort:
+            if item[1] != 0:
+                print("User: ", item[0], " ", item[1])
+
     finally:
         cnx.close()
     
