@@ -14,7 +14,7 @@ from credentials import * # This is the file that has the credentials to
 import mysql.connector
 import math
 from operator import itemgetter
-total = 100
+total = 500
 
 suicidalTotal = 0
 regularTotal = 0
@@ -117,7 +117,7 @@ def createTable(suicidal, regular):
         # print(suicidal[key])
         # print("AFTER")
 
-    # print(sort)
+    print(sorted(suicidal.items(), key=itemgetter(1), reverse=True))
     return suicidal
 
 def getTable():
